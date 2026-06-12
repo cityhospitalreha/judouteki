@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>training</title>
+<link rel="manifest" href="training-manifest.json">
+<link rel="icon" href="training-icon-192.png">
+<link rel="apple-touch-icon" href="training-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="受動">
+<meta name="theme-color" content="#111214">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111214;
+  --surface:#1C1E22;
+  --surface2:#23262C;
+  --border:#2C2F35;
+  --border-md:#3E424B;
+  --text:#EDEEF0;
+  --text2:#9BA0AA;
+  --text3:#5A5E68;
+  --accent:#4D9EFA;
+  --accent-dark:#162033;
+  --green:#34D399;
+  --green-dark:#0D2E22;
+  --orange:#FB923C;
+  --orange-dark:#2A1500;
+  --red:#F87171;
+  --red-dark:#2A0D0D;
+  --r-sm:6px;
+  --r-md:10px;
+  --r-lg:16px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;background:var(--bg);color:var(--text)}
+
+/* ═══ SHARED ═══ */
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column}
+#home-screen.active{min-height:100vh;padding:1.5rem 1rem 3rem}
+.fullscreen{position:fixed;inset:0;padding:12px 12px 8px}
+
+.app-title{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.app-sub{font-size:14px;color:var(--text2);margin-bottom:2rem;line-height:1.5}
+
+.section-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.section-block{margin-bottom:1.5rem}
+
+/* App cards */
+.app-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:2rem}
+.app-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px;cursor:pointer;transition:border-color .15s,background .15s;
+  display:flex;align-items:center;gap:14px;
+}
+.app-card:hover{border-color:var(--border-md);background:var(--surface2)}
+.app-card.reaction .card-icon{background:#1A1F2E;color:var(--accent)}
+.app-card.search   .card-icon{background:#0D2218;color:var(--green)}
+.app-card.repeat   .card-icon{background:#1E1506;color:var(--orange)}
+.card-icon{width:46px;height:46px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.card-body{}
+.card-title{font-size:16px;font-weight:600;margin-bottom:2px}
+.card-desc{font-size:12px;color:var(--text2);line-height:1.5}
+
+/* Settings panel */
+.settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:1.5rem}
+.settings-panel .panel-title{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.setting-row:last-child{margin-bottom:0}
+.setting-name{font-size:13px;color:var(--text)}
+.toggle-group{display:flex;gap:4px}
+.toggle-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text2);transition:all .1s;
+}
+.toggle-btn:hover{border-color:var(--border-md);color:var(--text)}
+.toggle-btn.selected{background:var(--accent);border-color:var(--accent);color:#0A0E14;font-weight:600}
+.toggle-btn.selected.green{background:var(--green);border-color:var(--green)}
+.toggle-btn.selected.orange{background:var(--orange);border-color:var(--orange)}
+
+.start-btn{
+  display:block;width:100%;padding:15px;border:none;border-radius:var(--r-md);
+  font-size:16px;font-weight:700;cursor:pointer;transition:opacity .12s;
+  color:#0A0E14;
+}
+.start-btn.accent{background:var(--accent)}
+.start-btn.green{background:var(--green)}
+.start-btn.orange{background:var(--orange)}
+.start-btn:hover{opacity:.88}
+.start-btn:active{transform:scale(.98)}
+
+/* ═══ GAME HEADER ═══ */
+.game-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:8px;border-bottom:1px solid var(--border);flex-shrink:0;margin-bottom:8px;
+}
+.gh-left{display:flex;align-items:center;gap:14px}
+.gh-timer{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text)}
+.gh-stats{display:flex;gap:10px}
+.gh-stat{font-size:12px;color:var(--text3)}
+.gh-stat span{font-weight:600;color:var(--text2)}
+.quit-btn{
+  background:none;border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:5px 12px;font-size:13px;cursor:pointer;color:var(--text2);flex-shrink:0;
+}
+
+/* ═══ RESULT ═══ */
+.result-wrap{padding:1.5rem 1rem 3rem;overflow-y:auto}
+.result-header{margin-bottom:1.5rem}
+.result-header h2{font-size:22px;font-weight:700;margin-bottom:4px}
+.result-header p{font-size:13px;color:var(--text2)}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center}
+.metric .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.metric .lbl{font-size:10px;color:var(--text3);margin-top:3px}
+.detail-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:1.5rem}
+.detail-title{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.result-actions{display:flex;flex-direction:column;gap:8px}
+.btn-primary{display:block;width:100%;padding:13px;background:var(--accent);color:#0A0E14;border:none;border-radius:var(--r-md);font-size:15px;font-weight:700;cursor:pointer}
+.btn-secondary{display:block;width:100%;padding:11px;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;cursor:pointer}
+
+/* ═══ REACTION ═══ */
+#reaction-game.active{display:flex}
+.rx-grid-wrap{flex:1;display:flex;justify-content:center;align-items:center;overflow:hidden}
+#rx-grid{display:grid;gap:8px}
+.rx-cell{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);
+  cursor:pointer;transition:background .08s,transform .08s;
+}
+.rx-cell:active{transform:scale(.92)}
+.rx-cell.lit-blue{background:#1E4A8A!important;border-color:var(--accent)!important;box-shadow:0 0 18px rgba(77,158,250,.5)}
+.rx-cell.lit-orange{background:#7A3500!important;border-color:var(--orange)!important;box-shadow:0 0 18px rgba(251,146,60,.5)}
+.rx-cell.lit-nogo{background:#5A0D0D!important;border-color:var(--red)!important;box-shadow:0 0 18px rgba(248,113,113,.5)}
+.rx-cell.wrong-flash{animation:rx-wrong .3s ease}
+@keyframes rx-wrong{0%,100%{background:var(--surface)}50%{background:var(--red-dark);border-color:var(--red)}}
+.rx-instruction{
+  flex-shrink:0;text-align:center;padding:6px 0 2px;
+  font-size:13px;color:var(--text2);
+}
+.rx-instruction strong{font-size:20px;color:var(--text);display:block;margin-top:2px}
+
+/* ═══ SEARCH ═══ */
+#search-game.active{display:flex}
+.sr-target-bar{flex-shrink:0;text-align:center;padding:4px 0 6px}
+.sr-target-label{font-size:12px;color:var(--text3);margin-bottom:4px}
+.sr-target-items{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.sr-target-chip{
+  background:var(--accent-dark);border:1.5px solid var(--accent);border-radius:var(--r-sm);
+  padding:4px 12px;font-size:18px;font-weight:700;color:var(--accent);
+  min-width:36px;text-align:center;transition:opacity .2s;
+}
+.sr-target-chip.done{opacity:.25;text-decoration:line-through}
+.sr-grid-wrap{flex:1;display:flex;justify-content:center;align-items:center;overflow:hidden}
+#sr-grid{display:grid;gap:5px}
+.sr-cell{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  cursor:pointer;font-weight:700;color:var(--text);transition:background .08s;
+  user-select:none;
+}
+.sr-cell:hover{background:var(--surface2)}
+.sr-cell:active{transform:scale(.92)}
+.sr-cell.found{opacity:0;pointer-events:none;transition:opacity .2s}
+.sr-cell.wrong-flash{animation:sr-wrong .3s ease}
+@keyframes sr-wrong{0%,100%{background:var(--surface)}50%{background:var(--red-dark);border-color:var(--red)}}
+
+/* ═══ REPEAT ═══ */
+#repeat-game.active{display:flex}
+.rp-show-area{
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;padding:6px 0 8px;
+}
+.rp-showing-label{font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}
+.rp-show-seq{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:44px;align-items:center}
+.rp-show-item{
+  background:var(--orange-dark);border:1.5px solid var(--orange);border-radius:var(--r-sm);
+  padding:6px 14px;font-size:20px;font-weight:700;color:var(--orange);
+  min-width:44px;text-align:center;
+}
+.rp-show-item.hidden{background:var(--surface2);border-color:var(--border);color:var(--text3)}
+.rp-input-bar{
+  flex-shrink:0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+  padding:4px 0 6px;min-height:44px;align-items:center;
+}
+.rp-input-item{
+  background:var(--surface2);border:1.5px solid var(--border-md);border-radius:var(--r-sm);
+  padding:6px 14px;font-size:20px;font-weight:700;color:var(--text);
+  min-width:44px;text-align:center;
+}
+.rp-input-item.correct{background:#0D2E22;border-color:var(--green);color:var(--green)}
+.rp-input-item.wrong{background:var(--red-dark);border-color:var(--red);color:var(--red)}
+.rp-phase-msg{
+  font-size:14px;font-weight:600;text-align:center;padding:6px 0;flex-shrink:0;color:var(--text2);
+}
+.rp-grid-wrap{flex:1;display:flex;justify-content:center;align-items:center;overflow:hidden}
+#rp-grid{display:grid;gap:6px}
+.rp-cell{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  cursor:pointer;font-weight:700;color:var(--text);
+  user-select:none;transition:background .08s;
+}
+.rp-cell:active{transform:scale(.92)}
+.rp-cell.showing{background:#1E1506!important;border-color:var(--orange)!important;color:var(--orange)!important;transform:scale(1.06)}
+.rp-cell.correct-tap{background:#0D2E22!important;border-color:var(--green)!important;color:var(--green)!important}
+.rp-cell.wrong-tap{animation:rp-wrong .35s ease}
+@keyframes rp-wrong{0%,100%{background:var(--surface)}50%{background:var(--red-dark);border-color:var(--red)}}
+.rp-cell.disabled{opacity:.35;pointer-events:none}
+
+/* repeat result detail */
+.rp-result-seq{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.rp-res-chip{padding:4px 10px;border-radius:var(--r-sm);font-size:14px;font-weight:700}
+.rp-res-chip.ok{background:#0D2E22;color:var(--green)}
+.rp-res-chip.ng{background:var(--red-dark);color:var(--red)}
+
+/* reaction result */
+.rt-list{display:flex;flex-direction:column;gap:6px}
+.rt-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)}
+.rt-row:last-child{border-bottom:none}
+.rt-label{color:var(--text2)}
+.rt-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HOME ═══════════════════════════ -->
+<div id="home-screen" class="screen active">
+  <h1 class="app-title">training</h1>
+  <p class="app-sub">反応・探索・記憶のトレーニング</p>
+
+  <div class="section-block">
+    <div class="section-label">モードを選ぶ</div>
+    <div class="app-cards">
+      <div class="app-card reaction" onclick="openSetup('reaction')">
+        <div class="card-icon">⚡</div>
+        <div class="card-body">
+          <div class="card-title">リアクション</div>
+          <div class="card-desc">光ったマスをすばやくタップ<br>単純反応 / 選択反応 / Go-No-Go</div>
+        </div>
+      </div>
+      <div class="app-card search" onclick="openSetup('search')">
+        <div class="card-icon">🔍</div>
+        <div class="card-body">
+          <div class="card-title">サーチ</div>
+          <div class="card-desc">指定された文字をグリッドから全部探してタップ<br>数字 / ひらがな</div>
+        </div>
+      </div>
+      <div class="app-card repeat" onclick="openSetup('repeat')">
+        <div class="card-icon">🧠</div>
+        <div class="card-body">
+          <div class="card-title">リピート</div>
+          <div class="card-desc">順番に表示される数字・仮名を記憶してタップ<br>順唱 / 逆唱</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
+<div id="setup-screen" class="screen">
+  <div style="padding:1.5rem 1rem 3rem;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+      <button onclick="goHome()" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;font-size:13px;cursor:pointer;color:var(--text2)">← 戻る</button>
+      <h2 id="setup-title" style="font-size:20px;font-weight:700"></h2>
+    </div>
+    <div id="setup-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ REACTION GAME ═══════════════════════════ -->
+<div id="reaction-game" class="screen fullscreen">
+  <div class="game-header">
+    <div class="gh-left">
+      <div class="gh-timer" id="rx-timer">00:00</div>
+      <div class="gh-stats">
+        <div class="gh-stat">正解 <span id="rx-correct">0</span></div>
+        <div class="gh-stat">ミス <span id="rx-miss">0</span></div>
+      </div>
+    </div>
+    <button class="quit-btn" onclick="quitGame()">中断</button>
+  </div>
+  <div class="rx-instruction" id="rx-instruction"></div>
+  <div class="rx-grid-wrap"><div id="rx-grid"></div></div>
+</div>
+
+<!-- ═══════════════════════════ SEARCH GAME ═══════════════════════════ -->
+<div id="search-game" class="screen fullscreen">
+  <div class="game-header">
+    <div class="gh-left">
+      <div class="gh-timer" id="sr-timer">00:00</div>
+      <div class="gh-stats">
+        <div class="gh-stat">残り <span id="sr-remain">0</span></div>
+        <div class="gh-stat">ミス <span id="sr-miss">0</span></div>
+      </div>
+    </div>
+    <button class="quit-btn" onclick="quitGame()">中断</button>
+  </div>
+  <div class="sr-target-bar">
+    <div class="sr-target-label">これを探してタップ</div>
+    <div class="sr-target-items" id="sr-chips"></div>
+  </div>
+  <div class="sr-grid-wrap"><div id="sr-grid"></div></div>
+</div>
+
+<!-- ═══════════════════════════ REPEAT GAME ═══════════════════════════ -->
+<div id="repeat-game" class="screen fullscreen">
+  <div class="game-header">
+    <div class="gh-left">
+      <div class="gh-timer" id="rp-timer">00:00</div>
+      <div class="gh-stats">
+        <div class="gh-stat">ラウンド <span id="rp-round">1</span></div>
+        <div class="gh-stat">正解 <span id="rp-score">0</span></div>
+      </div>
+    </div>
+    <button class="quit-btn" onclick="quitGame()">中断</button>
+  </div>
+  <div class="rp-show-area">
+    <div class="rp-showing-label" id="rp-showing-label">提示中</div>
+    <div class="rp-show-seq" id="rp-show-seq"></div>
+  </div>
+  <div class="rp-phase-msg" id="rp-phase-msg"></div>
+  <div class="rp-input-bar" id="rp-input-bar"></div>
+  <div class="rp-grid-wrap"><div id="rp-grid"></div></div>
+</div>
+
+<!-- ═══════════════════════════ RESULT ═══════════════════════════ -->
+<div id="result-screen" class="screen">
+  <div class="result-wrap">
+    <div class="result-header">
+      <h2>完了！</h2>
+      <p id="result-sub"></p>
+    </div>
+    <div class="metrics-grid" id="result-metrics"></div>
+    <div class="detail-box" id="result-detail"></div>
+    <div class="result-actions">
+      <button class="btn-primary" onclick="retryGame()">もう一度</button>
+      <button class="btn-secondary" onclick="goHome()">ホームに戻る</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ UTILS ═══
+function $(id){return document.getElementById(id)}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  $(id).classList.add('active');
+}
+function shuffle(arr){
+  for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}
+  return arr;
+}
+function padZ(n){return n.toString().padStart(2,'0')}
+function fmtTime(s){return padZ(Math.floor(s/60))+':'+padZ(s%60)}
+
+var HIRAGANA = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'.split('');
+var currentMode = '';
+var cfg = {};
+var state = {};
+var globalTimer = null;
+
+function startGlobalTimer(displayId){
+  if(globalTimer) clearInterval(globalTimer);
+  state.startTime = Date.now();
+  state.elapsed = 0;
+  globalTimer = setInterval(function(){
+    state.elapsed = Math.floor((Date.now()-state.startTime)/1000);
+    $(displayId).textContent = fmtTime(state.elapsed);
+  },200);
+}
+function stopGlobalTimer(){if(globalTimer){clearInterval(globalTimer);globalTimer=null;}}
+
+function goHome(){
+  stopGlobalTimer();
+  state={};
+  showScreen('home-screen');
+}
+function quitGame(){
+  stopGlobalTimer();
+  state={};
+  showScreen('home-screen');
+}
+function retryGame(){
+  stopGlobalTimer();
+  startGame(currentMode, cfg);
+}
+
+// ═══ SETUP ═══
+var setupTemplates = {
+  reaction: function(){
+    return '<div class="settings-panel"><div class="panel-title">リアクション 設定</div>'+
+      '<div class="setting-row"><span class="setting-name">モード</span>'+
+      '<div class="toggle-group" id="rx-mode-g">'+
+        '<button class="toggle-btn selected" data-val="simple" onclick="tog(\'rx-mode-g\',this)">単純反応</button>'+
+        '<button class="toggle-btn" data-val="sequence" onclick="tog(\'rx-mode-g\',this)">連続タップ</button>'+
+        '<button class="toggle-btn" data-val="nogo" onclick="tog(\'rx-mode-g\',this)">Go-No-Go</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">グリッド</span>'+
+      '<div class="toggle-group" id="rx-size-g">'+
+        '<button class="toggle-btn selected" data-val="9" onclick="tog(\'rx-size-g\',this)">3×3</button>'+
+        '<button class="toggle-btn" data-val="16" onclick="tog(\'rx-size-g\',this)">4×4</button>'+
+        '<button class="toggle-btn" data-val="25" onclick="tog(\'rx-size-g\',this)">5×5</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">試行回数</span>'+
+      '<div class="toggle-group" id="rx-trials-g">'+
+        '<button class="toggle-btn selected" data-val="10" onclick="tog(\'rx-trials-g\',this)">10回</button>'+
+        '<button class="toggle-btn" data-val="20" onclick="tog(\'rx-trials-g\',this)">20回</button>'+
+        '<button class="toggle-btn" data-val="30" onclick="tog(\'rx-trials-g\',this)">30回</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<button class="start-btn accent" onclick="startFromSetup()">スタート</button>';
+  },
+  search: function(){
+    return '<div class="settings-panel"><div class="panel-title">サーチ 設定</div>'+
+      '<div class="setting-row"><span class="setting-name">文字種</span>'+
+      '<div class="toggle-group" id="sr-type-g">'+
+        '<button class="toggle-btn selected" data-val="number" onclick="tog(\'sr-type-g\',this)">数字</button>'+
+        '<button class="toggle-btn" data-val="kana" onclick="tog(\'sr-type-g\',this)">ひらがな</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">グリッドサイズ</span>'+
+      '<div class="toggle-group" id="sr-size-g">'+
+        '<button class="toggle-btn selected" data-val="5" onclick="tog(\'sr-size-g\',this)">5×5</button>'+
+        '<button class="toggle-btn" data-val="6" onclick="tog(\'sr-size-g\',this)">6×6</button>'+
+        '<button class="toggle-btn" data-val="7" onclick="tog(\'sr-size-g\',this)">7×7</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">ターゲット数</span>'+
+      '<div class="toggle-group" id="sr-targets-g">'+
+        '<button class="toggle-btn selected" data-val="1" onclick="tog(\'sr-targets-g\',this)">1種類</button>'+
+        '<button class="toggle-btn" data-val="2" onclick="tog(\'sr-targets-g\',this)">2種類</button>'+
+        '<button class="toggle-btn" data-val="3" onclick="tog(\'sr-targets-g\',this)">3種類</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<button class="start-btn green" onclick="startFromSetup()">スタート</button>';
+  },
+  repeat: function(){
+    return '<div class="settings-panel"><div class="panel-title">リピート 設定</div>'+
+      '<div class="setting-row"><span class="setting-name">文字種</span>'+
+      '<div class="toggle-group" id="rp-type-g">'+
+        '<button class="toggle-btn selected" data-val="number" onclick="tog(\'rp-type-g\',this)">数字</button>'+
+        '<button class="toggle-btn" data-val="kana" onclick="tog(\'rp-type-g\',this)">ひらがな</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">順序</span>'+
+      '<div class="toggle-group" id="rp-order-g">'+
+        '<button class="toggle-btn selected" data-val="forward" onclick="tog(\'rp-order-g\',this)">順唱</button>'+
+        '<button class="toggle-btn" data-val="backward" onclick="tog(\'rp-order-g\',this)">逆唱</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">開始桁数</span>'+
+      '<div class="toggle-group" id="rp-start-g">'+
+        '<button class="toggle-btn selected" data-val="2" onclick="tog(\'rp-start-g\',this)">2桁</button>'+
+        '<button class="toggle-btn" data-val="3" onclick="tog(\'rp-start-g\',this)">3桁</button>'+
+        '<button class="toggle-btn" data-val="4" onclick="tog(\'rp-start-g\',this)">4桁</button>'+
+      '</div></div>'+
+      '<div class="setting-row"><span class="setting-name">ラウンド数</span>'+
+      '<div class="toggle-group" id="rp-rounds-g">'+
+        '<button class="toggle-btn selected" data-val="5" onclick="tog(\'rp-rounds-g\',this)">5回</button>'+
+        '<button class="toggle-btn" data-val="8" onclick="tog(\'rp-rounds-g\',this)">8回</button>'+
+        '<button class="toggle-btn" data-val="10" onclick="tog(\'rp-rounds-g\',this)">10回</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<button class="start-btn orange" onclick="startFromSetup()">スタート</button>';
+  }
+};
+
+function tog(gid, el){
+  document.querySelectorAll('#'+gid+' .toggle-btn').forEach(function(b){b.classList.remove('selected')});
+  el.classList.add('selected');
+}
+function getTogVal(gid){
+  var el = document.querySelector('#'+gid+' .toggle-btn.selected');
+  return el ? el.dataset.val : null;
+}
+
+function openSetup(mode){
+  currentMode = mode;
+  var titles = {reaction:'⚡ リアクション', search:'🔍 サーチ', repeat:'🧠 リピート'};
+  $('setup-title').textContent = titles[mode];
+  $('setup-body').innerHTML = setupTemplates[mode]();
+  showScreen('setup-screen');
+}
+
+function startFromSetup(){
+  var c = {};
+  if(currentMode==='reaction'){
+    c.submode  = getTogVal('rx-mode-g');
+    c.gridN    = parseInt(getTogVal('rx-size-g'));
+    c.trials   = parseInt(getTogVal('rx-trials-g'));
+  } else if(currentMode==='search'){
+    c.type     = getTogVal('sr-type-g');
+    c.gridSize = parseInt(getTogVal('sr-size-g'));
+    c.numTargets = parseInt(getTogVal('sr-targets-g'));
+  } else if(currentMode==='repeat'){
+    c.type     = getTogVal('rp-type-g');
+    c.order    = getTogVal('rp-order-g');
+    c.startLen = parseInt(getTogVal('rp-start-g'));
+    c.rounds   = parseInt(getTogVal('rp-rounds-g'));
+  }
+  cfg = c;
+  startGame(currentMode, cfg);
+}
+
+function startGame(mode, c){
+  currentMode = mode;
+  cfg = c;
+  if(mode==='reaction') startReaction(c);
+  else if(mode==='search') startSearch(c);
+  else if(mode==='repeat') startRepeat(c);
+}
+
+// ═══════════════════════ REACTION ═══════════════════════
+function rxCellSize(){
+  var cols = Math.round(Math.sqrt(cfg.gridN));
+  var gap=8, padH=24, padV=24, headerH=110;
+  var avW=window.innerWidth-padH, avH=window.innerHeight-padV-headerH;
+  var byW=Math.floor((avW-gap*(cols-1))/cols);
+  var byH=Math.floor((avH-gap*(cols-1))/cols);
+  return Math.max(48, Math.min(byW,byH));
+}
+
+function startReaction(c){
+  var cols = Math.round(Math.sqrt(c.gridN));
+  var cellPx = rxCellSize();
+  state = {
+    submode: c.submode, cols: cols, gridN: c.gridN,
+    trials: c.trials, trialDone: 0,
+    correct: 0, miss: 0,
+    litIdx: -1, litType: '',
+    rtList: [], // reaction times
+    litTime: 0,
+    waiting: false
+  };
+  $('rx-correct').textContent='0';
+  $('rx-miss').textContent='0';
+
+  var instr = {
+    simple:   '光ったマスをタップ',
+    sequence: '青が光ったらタップ → 次にオレンジが光るのでタップ（2連続）',
+    nogo:     '青が光ったらタップ　赤が光ったら押さない'
+  }[c.submode];
+  $('rx-instruction').innerHTML = '<strong>'+instr+'</strong>';
+
+  state.seqStep = 0; // 0=青待ち 1=オレンジ待ち（sequenceモード用）
+
+  var grid = $('rx-grid');
+  grid.style.gridTemplateColumns='repeat('+cols+', '+cellPx+'px)';
+  grid.innerHTML='';
+  for(var i=0;i<c.gridN;i++){
+    (function(idx){
+      var cell=document.createElement('div');
+      cell.className='rx-cell';
+      cell.style.width=cellPx+'px';
+      cell.style.height=cellPx+'px';
+      cell.dataset.idx=idx;
+      cell.addEventListener('click',function(){rxTap(idx)});
+      grid.appendChild(cell);
+    })(i);
+  }
+
+  showScreen('reaction-game');
+  startGlobalTimer('rx-timer');
+  setTimeout(rxNextTrial, 600);
+}
+
+function rxNextTrial(){
+  if(state.trialDone >= state.trials){ rxFinish(); return; }
+  rxClearLit();
+  state.waiting = true;
+  var delay = state.submode==='sequence' && state.seqStep===1 ? 300 : 800 + Math.random()*1200;
+  setTimeout(function(){
+    if(!state.waiting) return;
+    state.waiting = false;
+
+    var idx = Math.floor(Math.random()*state.gridN);
+    var type;
+
+    if(state.submode==='sequence'){
+      type = state.seqStep===0 ? 'blue' : 'orange';
+    } else if(state.submode==='nogo'){
+      type = Math.random()<0.35 ? 'nogo' : 'blue';
+    } else {
+      type = 'blue';
+    }
+
+    state.litIdx  = idx;
+    state.litIdx2 = -1;
+    state.litType = type;
+    state.litTime = Date.now();
+    var cells = $('rx-grid').querySelectorAll('.rx-cell');
+    var cls   = {blue:'lit-blue', orange:'lit-orange', nogo:'lit-nogo'}[type];
+    cells[idx].classList.add(cls);
+
+    state.litTO = setTimeout(function(){
+      if(state.litIdx!==idx) return;
+      // タイムアウト処理
+      if(type==='blue' || type==='orange'){
+        state.miss++; $('rx-miss').textContent=state.miss;
+      } else {
+        // nogo タイムアウト = 正解（押さなかった）
+        state.correct++; $('rx-correct').textContent=state.correct;
+      }
+      if(state.submode==='sequence') state.seqStep=0; // リセット
+      state.trialDone++;
+      rxClearLit(); rxNextTrial();
+    }, 3000);
+  }, delay);
+}
+
+function rxTap(idx){
+  if(state.litIdx===-1 || state.waiting){
+    state.miss++; $('rx-miss').textContent=state.miss;
+    var cells=$('rx-grid').querySelectorAll('.rx-cell');
+    cells[idx].classList.add('wrong-flash');
+    setTimeout(function(){cells[idx].classList.remove('wrong-flash')},300);
+    return;
+  }
+  if(state.litTO){clearTimeout(state.litTO); state.litTO=null;}
+  var rt = Date.now()-state.litTime;
+
+  if(state.submode==='sequence'){
+    if(idx===state.litIdx){
+      // 正解タップ
+      state.rtList.push(rt);
+      if(state.seqStep===0){
+        // 青タップ完了 → オレンジ待ちへ
+        state.seqStep=1;
+        rxClearLit();
+        rxNextTrial(); // すぐオレンジを出す
+      } else {
+        // オレンジタップ完了 → 1セット終了
+        state.seqStep=0;
+        state.correct++; $('rx-correct').textContent=state.correct;
+        state.trialDone++;
+        rxClearLit();
+        rxNextTrial();
+      }
+    } else {
+      // 違うマスをタップ
+      state.miss++; $('rx-miss').textContent=state.miss;
+      state.seqStep=0; // リセット
+      var cf=$('rx-grid').querySelectorAll('.rx-cell');
+      cf[idx].classList.add('wrong-flash');
+      setTimeout(function(){cf[idx].classList.remove('wrong-flash')},300);
+      state.trialDone++;
+      rxClearLit();
+      rxNextTrial();
+    }
+
+  } else if(state.submode==='nogo'){
+    if(state.litType==='nogo'){
+      state.miss++; $('rx-miss').textContent=state.miss;
+    } else if(idx===state.litIdx){
+      state.correct++; $('rx-correct').textContent=state.correct;
+      state.rtList.push(rt);
+    } else {
+      state.miss++; $('rx-miss').textContent=state.miss;
+      var c2=$('rx-grid').querySelectorAll('.rx-cell');
+      c2[idx].classList.add('wrong-flash');
+      setTimeout(function(){c2[idx].classList.remove('wrong-flash')},300);
+    }
+    state.trialDone++;
+    rxClearLit(); rxNextTrial();
+
+  } else {
+    // simple
+    if(idx===state.litIdx){
+      state.correct++; $('rx-correct').textContent=state.correct;
+      state.rtList.push(rt);
+    } else {
+      state.miss++; $('rx-miss').textContent=state.miss;
+      var c4=$('rx-grid').querySelectorAll('.rx-cell');
+      c4[idx].classList.add('wrong-flash');
+      setTimeout(function(){c4[idx].classList.remove('wrong-flash')},300);
+    }
+    state.trialDone++;
+    rxClearLit(); rxNextTrial();
+  }
+}
+
+function rxClearLit(){
+  state.litIdx=-1; state.litIdx2=-1; state.litType='';
+  $('rx-grid').querySelectorAll('.rx-cell').forEach(function(c){
+    c.classList.remove('lit-blue','lit-orange','lit-nogo');
+  });
+}
+
+function rxFinish(){
+  stopGlobalTimer();
+  var rtList = state.rtList;
+  var avgRt = rtList.length ? Math.round(rtList.reduce(function(a,b){return a+b},0)/rtList.length) : 0;
+  var minRt = rtList.length ? Math.min.apply(null,rtList) : 0;
+  var modeLabel = {simple:'単純反応', sequence:'連続タップ', nogo:'Go-No-Go'}[state.submode];
+
+  $('result-sub').textContent = 'リアクション · '+modeLabel;
+  $('result-metrics').innerHTML =
+    metric(state.correct+'回','正解')+
+    metric(state.miss+'回','ミス')+
+    metric(fmtTime(state.elapsed),'タイム');
+
+  var detail = '<div class="detail-title">反応時間</div><div class="rt-list">';
+  detail += rtRow('平均反応時間', avgRt ? avgRt+'ms' : '-');
+  detail += rtRow('最速', minRt ? minRt+'ms' : '-');
+  detail += rtRow('試行数', state.trials+'回');
+  detail += '</div>';
+  $('result-detail').innerHTML = detail;
+  showScreen('result-screen');
+}
+function rtRow(l,v){return '<div class="rt-row"><span class="rt-label">'+l+'</span><span class="rt-val">'+v+'</span></div>'}
+
+// ═══════════════════════ SEARCH ═══════════════════════
+function srCellSize(gridSize){
+  var gap=5, padH=24, padV=24, headerH=130;
+  var avW=window.innerWidth-padH, avH=window.innerHeight-padV-headerH;
+  var byW=Math.floor((avW-gap*(gridSize-1))/gridSize);
+  var byH=Math.floor((avH-gap*(gridSize-1))/gridSize);
+  return Math.max(36, Math.min(byW,byH));
+}
+
+function startSearch(c){
+  var pool = c.type==='number'
+    ? Array.from({length:99},function(_,i){return String(i+1)})
+    : HIRAGANA.slice();
+  shuffle(pool);
+
+  var gridSize = c.gridSize;
+  var total = gridSize*gridSize;
+  var allItems = shuffle(pool.slice(0,total));
+
+  // pick targets (items that appear multiple times OR just designated)
+  // we place each target ~20-30% of the grid
+  var targetPool = pool.slice(total, total+20);
+  shuffle(targetPool);
+  var targets = targetPool.slice(0, c.numTargets);
+
+  // fill grid: guarantee each target appears several times, rest are distractors
+  var targetCount = Math.max(2, Math.floor(total * 0.2 / c.numTargets));
+  var cells = [];
+  targets.forEach(function(t){
+    for(var i=0;i<targetCount;i++) cells.push(t);
+  });
+  var distractors = pool.filter(function(p){return targets.indexOf(p)<0});
+  shuffle(distractors);
+  while(cells.length<total) cells.push(distractors.shift()||'?');
+  shuffle(cells);
+
+  var cellPx = srCellSize(gridSize);
+  var fontSize = Math.round(cellPx * (c.type==='kana'?0.36:0.4));
+
+  state = {
+    targets: targets,
+    cells: cells,
+    gridSize: gridSize,
+    totalTargets: cells.filter(function(v){return targets.indexOf(v)>=0}).length,
+    found: 0,
+    miss: 0,
+    foundPerTarget: {}
+  };
+  targets.forEach(function(t){state.foundPerTarget[t]=0;});
+  var totalT = state.totalTargets;
+
+  $('sr-miss').textContent='0';
+  $('sr-remain').textContent=totalT;
+
+  // chips
+  var chips = '';
+  targets.forEach(function(t){chips+='<div class="sr-target-chip" id="chip-'+t+'">'+t+'</div>';});
+  $('sr-chips').innerHTML = chips;
+
+  var grid=$('sr-grid');
+  grid.style.gridTemplateColumns='repeat('+gridSize+', '+cellPx+'px)';
+  grid.innerHTML='';
+  cells.forEach(function(val, idx){
+    var cell=document.createElement('div');
+    cell.className='sr-cell';
+    cell.style.width=cellPx+'px';
+    cell.style.height=cellPx+'px';
+    cell.style.fontSize=fontSize+'px';
+    cell.dataset.val=val;
+    cell.textContent=val;
+    cell.addEventListener('click',function(){srTap(cell,val)});
+    grid.appendChild(cell);
+  });
+
+  showScreen('search-game');
+  startGlobalTimer('sr-timer');
+}
+
+function srTap(cell, val){
+  if(state.targets.indexOf(val)>=0){
+    cell.classList.add('found');
+    state.found++;
+    state.foundPerTarget[val]++;
+    // check if all of this target found
+    var remaining = state.totalTargets - state.found;
+    $('sr-remain').textContent=remaining;
+    if(remaining<=0){srFinish(); return;}
+  } else {
+    state.miss++;
+    $('sr-miss').textContent=state.miss;
+    cell.classList.add('wrong-flash');
+    setTimeout(function(){cell.classList.remove('wrong-flash')},300);
+  }
+}
+
+function srFinish(){
+  stopGlobalTimer();
+  var typeLabel = cfg.type==='number'?'数字':'ひらがな';
+  $('result-sub').textContent='サーチ · '+typeLabel+' · '+cfg.gridSize+'×'+cfg.gridSize;
+  $('result-metrics').innerHTML=
+    metric(state.found+'個','発見')+
+    metric(state.miss+'回','ミス')+
+    metric(fmtTime(state.elapsed),'タイム');
+
+  var detail='<div class="detail-title">ターゲット別</div><div class="rt-list">';
+  state.targets.forEach(function(t){
+    detail+=rtRow('「'+t+'」', state.foundPerTarget[t]+'個');
+  });
+  detail+='</div>';
+  $('result-detail').innerHTML=detail;
+  showScreen('result-screen');
+}
+
+// ═══════════════════════ REPEAT ═══════════════════════
+function rpCellSize(poolSize){
+  var cols = Math.ceil(Math.sqrt(poolSize));
+  var rows = Math.ceil(poolSize/cols);
+  var gap=6, padH=24, padV=24, headerH=200;
+  var avW=window.innerWidth-padH, avH=window.innerHeight-padV-headerH;
+  var byW=Math.floor((avW-gap*(cols-1))/cols);
+  var byH=Math.floor((avH-gap*(rows-1))/rows);
+  return Math.max(40, Math.min(byW,byH));
+}
+
+function startRepeat(c){
+  var pool;
+  if(c.type==='number'){
+    pool=[];for(var i=1;i<=10;i++) pool.push(String(i));
+  } else {
+    pool='あいうえおかきくけこさしすせそ'.split('');
+  }
+
+  state = {
+    pool: pool,
+    order: c.order,
+    startLen: c.startLen,
+    rounds: c.rounds,
+    round: 0,
+    score: 0,
+    roundResults: [],
+    phase: 'show', // show | input
+    seq: [],
+    inputSeq: [],
+    seqLen: c.startLen
+  };
+
+  var cellPx = rpCellSize(pool.length);
+  var fontSize = Math.round(cellPx * 0.38);
+
+  var grid=$('rp-grid');
+  var cols=Math.ceil(Math.sqrt(pool.length));
+  grid.style.gridTemplateColumns='repeat('+cols+', '+cellPx+'px)';
+  grid.innerHTML='';
+  pool.forEach(function(val){
+    var cell=document.createElement('div');
+    cell.className='rp-cell disabled';
+    cell.style.width=cellPx+'px';
+    cell.style.height=cellPx+'px';
+    cell.style.fontSize=fontSize+'px';
+    cell.dataset.val=val;
+    cell.textContent=val;
+    cell.addEventListener('click',function(){rpTap(val,cell)});
+    grid.appendChild(cell);
+  });
+
+  $('rp-score').textContent='0';
+  showScreen('repeat-game');
+  startGlobalTimer('rp-timer');
+  rpStartRound();
+}
+
+function rpStartRound(){
+  if(state.round>=state.rounds){rpFinish();return;}
+  state.round++;
+  $('rp-round').textContent=state.round;
+
+  // generate sequence
+  var seq=[];
+  for(var i=0;i<state.seqLen;i++){
+    seq.push(state.pool[Math.floor(Math.random()*state.pool.length)]);
+  }
+  state.seq=seq;
+  state.inputSeq=[];
+
+  // show phase
+  state.phase='show';
+  var label = state.order==='forward'?'覚えてください（順唱）':'覚えてください（逆唱）';
+  $('rp-showing-label').textContent=label;
+  $('rp-phase-msg').textContent='';
+  $('rp-input-bar').innerHTML='';
+
+  // disable grid
+  document.querySelectorAll('.rp-cell').forEach(function(c){
+    c.classList.add('disabled');
+    c.classList.remove('correct-tap','wrong-tap','showing');
+  });
+
+  // show sequence one by one
+  rpShowSeqItems(seq, 0);
+}
+
+function rpShowSeqItems(seq, i){
+  if(i>=seq.length){
+    // 全提示完了 → 少し待ってから全消し → 入力フェーズ
+    // 最後のアイテムを一瞬見せてから隠す
+    setTimeout(function(){
+      // グリッドのhighlight消す
+      document.querySelectorAll('.rp-cell').forEach(function(c){c.classList.remove('showing')});
+      // 提示エリアを「？」に隠す
+      var html='';
+      seq.forEach(function(){html+='<div class="rp-show-item hidden">？</div>';});
+      $('rp-show-seq').innerHTML=html;
+      $('rp-showing-label').textContent='さあタップ！';
+      setTimeout(rpStartInput, 400);
+    }, 700);
+    return;
+  }
+
+  // 現在のアイテムだけ大きく中央表示、過去は小さく表示
+  var html='';
+  seq.forEach(function(v,j){
+    if(j<i) html+='<div class="rp-show-item" style="opacity:.45;font-size:14px">'+v+'</div>';
+    else if(j===i) html+='<div class="rp-show-item">'+v+'</div>';
+    else html+='<div class="rp-show-item hidden">？</div>';
+  });
+  $('rp-show-seq').innerHTML=html;
+
+  // グリッドの該当マスをhighlight
+  document.querySelectorAll('.rp-cell').forEach(function(c){c.classList.remove('showing')});
+  document.querySelectorAll('.rp-cell').forEach(function(c){
+    if(c.dataset.val===seq[i]) c.classList.add('showing');
+  });
+
+  setTimeout(function(){
+    document.querySelectorAll('.rp-cell').forEach(function(c){c.classList.remove('showing')});
+    setTimeout(function(){rpShowSeqItems(seq,i+1)},250);
+  }, 800);
+}
+
+function rpStartInput(){
+  state.phase='input';
+  var answer = state.order==='backward' ? state.seq.slice().reverse() : state.seq.slice();
+  state.answer = answer;
+
+  var orderLabel = state.order==='backward'?'逆の順にタップ':'同じ順にタップ';
+  $('rp-phase-msg').textContent=orderLabel+'（'+answer.length+'個）';
+
+  // 入力スロットを空白で表示
+  var html='';
+  answer.forEach(function(){html+='<div class="rp-input-item">？</div>';});
+  $('rp-input-bar').innerHTML=html;
+
+  // 提示エリアは隠したまま（答えを見せない）
+  var html2='';
+  state.seq.forEach(function(){html2+='<div class="rp-show-item hidden">？</div>';});
+  $('rp-show-seq').innerHTML=html2;
+
+  // グリッドを有効化
+  document.querySelectorAll('.rp-cell').forEach(function(c){c.classList.remove('disabled')});
+}
+
+function rpTap(val, cell){
+  if(state.phase!=='input') return;
+  var i=state.inputSeq.length;
+  var expected=state.answer[i];
+  state.inputSeq.push(val);
+
+  var items=$('rp-input-bar').querySelectorAll('.rp-input-item');
+  if(val===expected){
+    items[i].textContent=val;
+    items[i].classList.add('correct');
+    cell.classList.add('correct-tap');
+    setTimeout(function(){cell.classList.remove('correct-tap')},400);
+  } else {
+    items[i].textContent=val;
+    items[i].classList.add('wrong');
+    cell.classList.add('wrong-tap');
+    setTimeout(function(){cell.classList.remove('wrong-tap')},350);
+  }
+
+  if(state.inputSeq.length>=state.answer.length){
+    var correct=state.inputSeq.every(function(v,j){return v===state.answer[j]});
+    state.roundResults.push({seq:state.seq.slice(), answer:state.answer.slice(), input:state.inputSeq.slice(), correct:correct});
+    if(correct) state.score++;
+    $('rp-score').textContent=state.score;
+    $('rp-phase-msg').textContent = correct ? '✓ 正解！' : '✗ 不正解';
+
+    document.querySelectorAll('.rp-cell').forEach(function(c){c.classList.add('disabled')});
+
+    // 正解を一瞬表示してから次ラウンド
+    setTimeout(function(){
+      var revealHtml='';
+      state.answer.forEach(function(v){revealHtml+='<div class="rp-show-item">'+v+'</div>';});
+      $('rp-show-seq').innerHTML=revealHtml;
+      $('rp-showing-label').textContent='正解はこれ';
+    }, 300);
+
+    setTimeout(function(){
+      $('rp-input-bar').innerHTML='';
+      $('rp-show-seq').innerHTML='';
+      $('rp-phase-msg').textContent='';
+      rpStartRound();
+    }, 1800);
+  }
+}
+
+function rpFinish(){
+  stopGlobalTimer();
+  var typeLabel=cfg.type==='number'?'数字':'ひらがな';
+  var orderLabel=cfg.order==='forward'?'順唱':'逆唱';
+  $('result-sub').textContent='リピート · '+typeLabel+' · '+orderLabel;
+  $('result-metrics').innerHTML=
+    metric(state.score+'/'+state.rounds,'正解')+
+    metric(state.seqLen+'桁','桁数')+
+    metric(fmtTime(state.elapsed),'タイム');
+
+  var detail='<div class="detail-title">ラウンド詳細</div>';
+  detail+='<div class="rp-result-seq" id="rp-res-list">';
+  state.roundResults.forEach(function(r,i){
+    detail+='<div class="rp-res-chip '+(r.correct?'ok':'ng')+'">';
+    detail+=(i+1)+'：'+(r.correct?'○':'✕');
+    detail+='</div>';
+  });
+  detail+='</div>';
+  $('result-detail').innerHTML=detail;
+  showScreen('result-screen');
+}
+
+function metric(val, lbl){
+  return '<div class="metric"><div class="val">'+val+'</div><div class="lbl">'+lbl+'</div></div>';
+}
+
+window.addEventListener('resize', function(){
+  // reaction
+  if(document.getElementById('reaction-game').classList.contains('active') && state.cols){
+    var cellPx=rxCellSize();
+    var grid=$('rx-grid');
+    grid.style.gridTemplateColumns='repeat('+state.cols+', '+cellPx+'px)';
+    grid.querySelectorAll('.rx-cell').forEach(function(c){c.style.width=cellPx+'px';c.style.height=cellPx+'px';});
+  }
+});
+
+// PWA: Service Worker登録
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('training-service-worker.js').catch(function(err){
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
